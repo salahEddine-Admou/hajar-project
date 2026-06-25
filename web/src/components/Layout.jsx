@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useI18n } from '../i18n';
 
@@ -16,6 +16,8 @@ const LINKS = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const { t, lang, setLang } = useI18n();
+  const location = useLocation();
+  const current = LINKS.find((l) => (l.end ? location.pathname === l.to : location.pathname.startsWith(l.to) && l.to !== '/')) || LINKS[0];
 
   return (
     <div className="shell">
@@ -30,23 +32,33 @@ export default function Layout() {
           </NavLink>
         ))}
         <div className="spacer" />
-        <select value={lang} onChange={(e) => setLang(e.target.value)} aria-label={t('language')}>
-          <option value="ar">العربية</option>
-          <option value="fr">Français</option>
-        </select>
-        <button className="btn btn-ghost" onClick={logout}>{t('logout')}</button>
       </aside>
 
       <main className="main">
         <div className="topbar">
-          <h2>{t('appName')}</h2>
+          <div className="brand-mini">
+            <span className="page-icon">{current.icon}</span>
+            <h2>{t(current.key)}</h2>
+          </div>
           <div className="userbox">
-            <span className="muted">{user?.name}</span>
-            <div className="avatar">{(user?.name || '?').charAt(0)}</div>
+            <select className="lang-mini" value={lang} onChange={(e) => setLang(e.target.value)} aria-label={t('language')}>
+              <option value="ar">ع</option>
+              <option value="fr">FR</option>
+            </select>
+            <div className="avatar" title={user?.name}>{(user?.name || '?').charAt(0).toUpperCase()}</div>
+            <button className="icon-btn" onClick={logout} title={t('logout')}>⎋</button>
           </div>
         </div>
         <Outlet />
       </main>
+
+      <nav className="bottom-nav">
+        {LINKS.map((l) => (
+          <NavLink key={l.to} to={l.to} end={l.end} className="bn-link" title={t(l.key)}>
+            <span className="bn-ic">{l.icon}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }

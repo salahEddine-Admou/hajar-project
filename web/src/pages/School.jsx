@@ -34,15 +34,13 @@ export default function School() {
 
   return (
     <div>
-      <div className="topbar" style={{ marginBottom: '.6rem' }}>
-        <div className="tabs" style={{ margin: 0 }}>
-          {students.map((s) => (
-            <button key={s.id} className={`tab ${selected?.id === s.id ? 'active' : ''}`} onClick={() => setSelected(s)}>
-              🎒 {s.name}{s.grade ? ` • ${s.grade}` : ''}
-            </button>
-          ))}
-          <button className="tab" onClick={() => setShowAdd((v) => !v)}>＋ {t('addStudent')}</button>
-        </div>
+      <div className="tabs" style={{ marginBottom: '.6rem' }}>
+        {students.map((s) => (
+          <button key={s.id} className={`tab ${selected?.id === s.id ? 'active' : ''}`} onClick={() => setSelected(s)}>
+            🎒 {s.name}{s.grade ? ` • ${s.grade}` : ''}
+          </button>
+        ))}
+        <button className="tab" onClick={() => setShowAdd((v) => !v)}>＋ {t('addStudent')}</button>
       </div>
 
       {showAdd && <AddStudent onDone={() => { setShowAdd(false); loadStudents(); }} />}

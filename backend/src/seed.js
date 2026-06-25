@@ -23,7 +23,7 @@ async function run() {
     name: 'Amina Demo',
     email: 'demo@hajar.app',
     passwordHash,
-    locale: 'en',
+    locale: 'ar',
     role: 'mother',
   });
   console.log('Created demo user: demo@hajar.app / password123');
@@ -72,6 +72,60 @@ async function run() {
     expert: false,
     likes: 5,
   });
+
+  // ---- School tracking demo data ----
+  const student = await insert('students', {
+    userId: user.id,
+    name: 'Lina',
+    babyId: null,
+    schoolName: 'École Al Andalous',
+    grade: 'CE2',
+    teacher: 'Mme Karima',
+    year: '2025/2026',
+    color: '#7c5cbf',
+  });
+
+  const gradeRows = [
+    { subject: 'Mathématiques', score: 16, max: 20, term: 'T1', days: 40 },
+    { subject: 'Mathématiques', score: 14, max: 20, term: 'T1', days: 15 },
+    { subject: 'Français', score: 17, max: 20, term: 'T1', days: 35 },
+    { subject: 'Arabe', score: 18, max: 20, term: 'T1', days: 30 },
+    { subject: 'Sciences', score: 13, max: 20, term: 'T1', days: 20 },
+    { subject: 'Anglais', score: 15, max: 20, term: 'T1', days: 10 },
+  ];
+  for (const g of gradeRows) {
+    await insert('grades', {
+      userId: user.id, studentId: student.id,
+      subject: g.subject, score: g.score, max: g.max, term: g.term,
+      date: new Date(Date.now() - g.days * DAY).toISOString(),
+    });
+  }
+
+  await insert('assignments', { userId: user.id, studentId: student.id, title: 'Exercices p.42', subject: 'Mathématiques', type: 'homework', dueDate: new Date(Date.now() + 2 * DAY).toISOString(), done: false });
+  await insert('assignments', { userId: user.id, studentId: student.id, title: 'Lecture chapitre 3', subject: 'Français', type: 'homework', dueDate: new Date(Date.now() + 5 * DAY).toISOString(), done: false });
+  await insert('assignments', { userId: user.id, studentId: student.id, title: 'Contrôle de sciences', subject: 'Sciences', type: 'exam', dueDate: new Date(Date.now() + 9 * DAY).toISOString(), done: false });
+  await insert('assignments', { userId: user.id, studentId: student.id, title: 'Poésie à réciter', subject: 'Arabe', type: 'homework', dueDate: new Date(Date.now() - 1 * DAY).toISOString(), done: true });
+
+  const attRows = [
+    { days: 1, status: 'present' }, { days: 2, status: 'present' }, { days: 3, status: 'late' },
+    { days: 4, status: 'present' }, { days: 5, status: 'absent' }, { days: 8, status: 'present' },
+  ];
+  for (const a of attRows) {
+    await insert('attendance', { userId: user.id, studentId: student.id, status: a.status, date: new Date(Date.now() - a.days * DAY).toISOString() });
+  }
+
+  const timetable = [
+    { day: 0, subject: 'Mathématiques', startTime: '08:30', endTime: '09:30', room: 'A1' },
+    { day: 0, subject: 'Français', startTime: '09:45', endTime: '10:45', room: 'A1' },
+    { day: 1, subject: 'Sciences', startTime: '08:30', endTime: '09:30', room: 'Lab' },
+    { day: 1, subject: 'Anglais', startTime: '10:00', endTime: '11:00', room: 'B2' },
+    { day: 2, subject: 'Arabe', startTime: '08:30', endTime: '09:30', room: 'A1' },
+    { day: 3, subject: 'Mathématiques', startTime: '08:30', endTime: '09:30', room: 'A1' },
+    { day: 4, subject: 'Sport', startTime: '10:00', endTime: '11:30', room: 'Gym' },
+  ];
+  for (const t of timetable) {
+    await insert('timetable', { userId: user.id, studentId: student.id, ...t });
+  }
 
   console.log('Seed complete at', now());
   await mongoose.disconnect();
