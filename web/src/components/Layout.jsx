@@ -7,6 +7,7 @@ const LINKS = [
   { to: '/pregnancy', key: 'pregnancy', icon: '🤰' },
   { to: '/babies', key: 'babies', icon: '👶' },
   { to: '/wellness', key: 'wellness', icon: '🌸' },
+  { to: '/school', key: 'school', icon: '🎒' },
   { to: '/tools', key: 'tools', icon: '⏱️' },
   { to: '/community', key: 'community', icon: '💬' },
   { to: '/assistant', key: 'assistant', icon: '🤖' },

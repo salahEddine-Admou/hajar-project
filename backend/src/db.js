@@ -27,6 +27,11 @@ const COLLECTIONS = [
   'chatMessages',
   'kickSessions',
   'contractions',
+  'students',
+  'grades',
+  'assignments',
+  'attendance',
+  'timetable',
 ];
 
 const models = {};

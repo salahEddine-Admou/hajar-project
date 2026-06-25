@@ -82,6 +82,29 @@ router.get('/upcoming', async (req, res) => {
     }
   }
 
+  // School: pending homework & exams with a due date
+  const assignments = await find(
+    'assignments',
+    (a) => a.userId === req.userId && !a.done && a.dueDate,
+  );
+  if (assignments.length) {
+    const students = await find('students', (s) => s.userId === req.userId);
+    const nameOf = (id) => students.find((s) => s.id === id)?.name || '';
+    for (const a of assignments) {
+      const due = new Date(a.dueDate).getTime();
+      const diffDays = (due - now) / DAY;
+      if (diffDays <= horizonDays) {
+        items.push({
+          type: a.type === 'exam' ? 'exam' : 'homework',
+          title: a.title,
+          subtitle: [nameOf(a.studentId), a.subject].filter(Boolean).join(' • '),
+          date: a.dueDate,
+          overdue: diffDays < 0,
+        });
+      }
+    }
+  }
+
   items.sort((a, b) => new Date(a.date) - new Date(b.date));
   res.json({ notifications: items, count: items.length });
 });

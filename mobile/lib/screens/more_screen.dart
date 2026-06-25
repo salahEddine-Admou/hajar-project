@@ -13,6 +13,7 @@ import 'community_screen.dart';
 import 'profile_screen.dart';
 import 'kick_counter_screen.dart';
 import 'contraction_timer_screen.dart';
+import 'school_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -21,6 +22,7 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final items = [
+      _MoreItem(Icons.school, l.t('school'), AppColors.mint, const SchoolScreen()),
       _MoreItem(Icons.favorite, l.t('kickCounter'), AppColors.blush, const KickCounterScreen()),
       _MoreItem(Icons.timer, l.t('contractionTimer'), AppColors.lavender, const ContractionTimerScreen()),
       _MoreItem(Icons.event, l.t('appointments'), AppColors.sky, const AppointmentsScreen()),

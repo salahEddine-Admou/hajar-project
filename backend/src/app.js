@@ -15,6 +15,7 @@ import aiRoutes from './routes/ai.js';
 import analyticsRoutes from './routes/analytics.js';
 import notificationRoutes from './routes/notifications.js';
 import toolRoutes from './routes/tools.js';
+import schoolRoutes from './routes/school.js';
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/tools', toolRoutes);
+app.use('/api/school', schoolRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
 
