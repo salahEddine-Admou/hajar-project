@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Pregnancy from './pages/Pregnancy';
 import Babies from './pages/Babies';
 import Wellness from './pages/Wellness';
+import Tools from './pages/Tools';
 import Community from './pages/Community';
 import Assistant from './pages/Assistant';
 
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/pregnancy" element={<Pregnancy />} />
         <Route path="/babies" element={<Babies />} />
         <Route path="/wellness" element={<Wellness />} />
+        <Route path="/tools" element={<Tools />} />
         <Route path="/community" element={<Community />} />
         <Route path="/assistant" element={<Assistant />} />
         <Route path="*" element={<Navigate to="/" replace />} />

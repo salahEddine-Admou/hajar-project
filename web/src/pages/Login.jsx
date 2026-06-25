@@ -36,9 +36,9 @@ export default function Login() {
         </div>
 
         <div className="lang-row">
-          {['en', 'fr', 'ar'].map((l) => (
-            <button type="button" key={l} className={`chip ${lang === l ? 'active' : ''}`} onClick={() => setLang(l)}>
-              {l === 'en' ? 'EN' : l === 'fr' ? 'FR' : 'AR'}
+          {[['ar', 'العربية'], ['fr', 'Français']].map(([code, label]) => (
+            <button type="button" key={code} className={`chip ${lang === code ? 'active' : ''}`} onClick={() => setLang(code)}>
+              {label}
             </button>
           ))}
         </div>

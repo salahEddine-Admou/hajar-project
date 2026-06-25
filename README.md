@@ -22,7 +22,11 @@ A modern mobile app for mothers to track **pregnancy, childbirth, baby developme
 | **AI assistant** | Chatbot for pregnancy / newborn / breastfeeding / sleep / development questions (OpenAI or built‑in rule engine) |
 | **Notifications** | Appointment, vaccination, medication & milestone data exposed for client‑side reminders |
 | **Community** | Topic groups, posts, replies, likes, expert Q&A flag |
+| **Tools** | Kick counter (fetal movement sessions) and contraction timer with saved history |
+| **Daily tips** | Localized educational tip of the day (pregnancy / baby context) |
 | **Analytics** | Engagement overview endpoint for a dashboard |
+
+> **Languages:** the apps default to **Arabic** (RTL) and offer an **Arabic / French** switcher. The mobile app opens with a language picker, then onboarding slides, on first launch.
 
 ---
 
@@ -60,6 +64,8 @@ password: password123
 - `GET/POST /community/posts`, `…/replies`, `…/like`
 - `GET /analytics/overview`
 - `GET /notifications/upcoming?lang=en&days=60` (aggregated appointment / vaccination / medication / milestone reminders)
+- `GET /tools/tips/daily?lang=ar&context=pregnancy|baby` (localized daily tip)
+- `GET/POST/DELETE /tools/kicks` (kick counter sessions), `GET/POST/DELETE /tools/contractions` (contraction timer)
 
 Robustness & security: `helmet` security headers and `express-async-errors` (async route rejections are routed to the error handler instead of hanging the request).
 

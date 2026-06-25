@@ -11,19 +11,25 @@ class AppState extends ChangeNotifier {
 
   Map<String, dynamic>? _user;
   String? _token;
-  Locale _locale = const Locale('en');
+  Locale _locale = const Locale('ar');
   bool _bootstrapped = false;
+  bool _localeChosen = false;
+  bool _onboardingDone = false;
 
   Map<String, dynamic>? get user => _user;
   bool get isLoggedIn => _token != null;
   Locale get locale => _locale;
   bool get bootstrapped => _bootstrapped;
+  bool get localeChosen => _localeChosen;
+  bool get onboardingDone => _onboardingDone;
   String get lang => _locale.languageCode;
 
   Future<void> bootstrap() async {
     final prefs = await SharedPreferences.getInstance();
     final savedLocale = prefs.getString('locale');
     if (savedLocale != null) _locale = Locale(savedLocale);
+    _localeChosen = prefs.getBool('localeChosen') ?? false;
+    _onboardingDone = prefs.getBool('onboardingDone') ?? false;
     final token = prefs.getString('token');
     if (token != null) {
       _token = token;
@@ -48,6 +54,21 @@ class AppState extends ChangeNotifier {
         await api.patch('/auth/me', {'locale': code});
       } catch (_) {}
     }
+    notifyListeners();
+  }
+
+  /// Called from the first-launch language selection screen.
+  Future<void> chooseLocale(String code) async {
+    _localeChosen = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('localeChosen', true);
+    await setLocale(code);
+  }
+
+  Future<void> completeOnboarding() async {
+    _onboardingDone = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboardingDone', true);
     notifyListeners();
   }
 

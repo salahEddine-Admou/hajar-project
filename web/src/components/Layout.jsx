@@ -7,6 +7,7 @@ const LINKS = [
   { to: '/pregnancy', key: 'pregnancy', icon: '🤰' },
   { to: '/babies', key: 'babies', icon: '👶' },
   { to: '/wellness', key: 'wellness', icon: '🌸' },
+  { to: '/tools', key: 'tools', icon: '⏱️' },
   { to: '/community', key: 'community', icon: '💬' },
   { to: '/assistant', key: 'assistant', icon: '🤖' },
 ];
@@ -29,9 +30,8 @@ export default function Layout() {
         ))}
         <div className="spacer" />
         <select value={lang} onChange={(e) => setLang(e.target.value)} aria-label={t('language')}>
-          <option value="en">English</option>
-          <option value="fr">Français</option>
           <option value="ar">العربية</option>
+          <option value="fr">Français</option>
         </select>
         <button className="btn btn-ghost" onClick={logout}>{t('logout')}</button>
       </aside>

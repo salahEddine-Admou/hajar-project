@@ -21,8 +21,9 @@ export default function Dashboard() {
       api.get('/analytics/overview'),
       api.get('/notifications/upcoming', { params: { lang } }),
       api.get('/pregnancy/active', { params: { lang } }),
+      api.get('/tools/tips/daily', { params: { lang, context: 'pregnancy' } }),
     ])
-      .then(([a, n, p]) => setData({ analytics: a.data, notifs: n.data.notifications, preg: p.data }))
+      .then(([a, n, p, tip]) => setData({ analytics: a.data, notifs: n.data.notifications, preg: p.data, tip: tip.data.tip }))
       .catch((e) => setError(e.message));
   };
 
@@ -43,6 +44,15 @@ export default function Dashboard() {
 
   return (
     <div>
+      {data.tip && (
+        <div className="card" style={{ display: 'flex', gap: '.8rem', alignItems: 'center', background: 'rgba(143,211,196,.25)' }}>
+          <span style={{ fontSize: '1.6rem' }}>💡</span>
+          <div>
+            <div style={{ fontWeight: 700 }}>{t('dailyTip')}</div>
+            <div style={{ fontSize: '.9rem' }}>{data.tip}</div>
+          </div>
+        </div>
+      )}
       <div className="section-title">{t('overview')}</div>
       <div className="grid cols-4">
         <Stat icon="👩" value={totals.users} label={t('totalUsers')} color="#7c5cbf" />

@@ -115,7 +115,7 @@ class _LanguagePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final options = {'en': 'English', 'fr': 'Français', 'ar': 'العربية'};
+    final options = {'ar': 'العربية', 'fr': 'Français'};
     return Wrap(
       spacing: 8,
       children: options.entries.map((e) {

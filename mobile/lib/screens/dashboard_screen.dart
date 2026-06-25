@@ -31,12 +31,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       api.get('/appointments'),
       api.get('/wellness/mood'),
       api.get('/babies'),
+      api.get('/tools/tips/daily', query: {'lang': state.lang, 'context': 'pregnancy'}),
     ]);
     return {
       'pregnancy': results[0],
       'appointments': results[1],
       'mood': results[2],
       'babies': results[3],
+      'tip': results[4],
     };
   }
 
@@ -85,6 +87,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
+                const SizedBox(height: 16),
+                SoftCard(
+                  color: AppColors.mint.withValues(alpha: 0.25),
+                  child: Row(
+                    children: [
+                      const Text('💡', style: TextStyle(fontSize: 28)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l.t('dailyTip'),
+                                style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink)),
+                            const SizedBox(height: 2),
+                            Text('${data['tip']?['tip'] ?? ''}',
+                                style: const TextStyle(color: AppColors.ink, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Row(
                   children: [

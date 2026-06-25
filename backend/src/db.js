@@ -25,6 +25,8 @@ const COLLECTIONS = [
   'communityPosts',
   'communityReplies',
   'chatMessages',
+  'kickSessions',
+  'contractions',
 ];
 
 const models = {};
@@ -40,12 +42,28 @@ function model(name) {
   return models[name];
 }
 
+let connectPromise = null;
+
 export async function connect(uri) {
-  mongoose.set('strictQuery', false);
-  await mongoose.connect(uri, { serverSelectionTimeoutMS: 15000 });
-  // Pre-register models so indexes are built.
-  COLLECTIONS.forEach(model);
-  return mongoose.connection;
+  // Reuse an existing (or in-flight) connection. On serverless platforms like
+  // Vercel the module is cached between warm invocations, so this prevents
+  // opening a new MongoDB connection on every request.
+  if (mongoose.connection.readyState === 1) return mongoose.connection;
+  if (!connectPromise) {
+    mongoose.set('strictQuery', false);
+    connectPromise = mongoose
+      .connect(uri, { serverSelectionTimeoutMS: 15000 })
+      .then((m) => {
+        // Pre-register models so indexes are built.
+        COLLECTIONS.forEach(model);
+        return m.connection;
+      })
+      .catch((err) => {
+        connectPromise = null;
+        throw err;
+      });
+  }
+  return connectPromise;
 }
 
 export function id() {

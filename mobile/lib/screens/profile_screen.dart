@@ -14,7 +14,7 @@ class ProfileScreen extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final state = context.watch<AppState>();
     final user = state.user ?? {};
-    final languages = {'en': 'English', 'fr': 'Français', 'ar': 'العربية'};
+    final languages = {'ar': 'العربية', 'fr': 'Français'};
 
     return GradientScaffold(
       appBar: AppBar(title: Text(l.t('profile'))),

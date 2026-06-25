@@ -11,6 +11,8 @@ import 'records_screen.dart';
 import 'ai_chat_screen.dart';
 import 'community_screen.dart';
 import 'profile_screen.dart';
+import 'kick_counter_screen.dart';
+import 'contraction_timer_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -19,6 +21,8 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final items = [
+      _MoreItem(Icons.favorite, l.t('kickCounter'), AppColors.blush, const KickCounterScreen()),
+      _MoreItem(Icons.timer, l.t('contractionTimer'), AppColors.lavender, const ContractionTimerScreen()),
       _MoreItem(Icons.event, l.t('appointments'), AppColors.sky, const AppointmentsScreen()),
       _MoreItem(Icons.medication, l.t('medications'), AppColors.blush, const MedicationsScreen()),
       _MoreItem(Icons.folder_shared, l.t('healthRecords'), AppColors.mint, const RecordsScreen()),

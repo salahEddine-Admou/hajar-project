@@ -17,6 +17,8 @@ const STRINGS = {
     mood: 'Mood', stress: 'Stress', anxiety: 'Anxiety', logMood: 'Log mood', recommendations: 'Recommendations',
     loading: 'Loading…', error: 'Something went wrong', empty: 'Nothing here yet', language: 'Language',
     overdue: 'Overdue', appointment: 'Appointment', medication: 'Medication', vaccination: 'Vaccination', milestone: 'Milestone',
+    tools: 'Tools', kickCounter: 'Kick counter', contractionTimer: 'Contraction timer', dailyTip: 'Tip of the day',
+    start: 'Start', stop: 'Stop', kicks: 'kicks', duration: 'Duration', interval: 'Interval', history: 'History', tapKick: 'Tap each kick',
   },
   fr: {
     appName: 'Hajar', dashboard: 'Tableau de bord', pregnancy: 'Grossesse', babies: 'Bébés',
@@ -34,6 +36,8 @@ const STRINGS = {
     mood: 'Humeur', stress: 'Stress', anxiety: 'Anxiété', logMood: "Noter l'humeur", recommendations: 'Recommandations',
     loading: 'Chargement…', error: 'Une erreur est survenue', empty: 'Rien pour le moment', language: 'Langue',
     overdue: 'En retard', appointment: 'Rendez-vous', medication: 'Médicament', vaccination: 'Vaccination', milestone: 'Étape',
+    tools: 'Outils', kickCounter: 'Compteur de coups', contractionTimer: 'Minuteur de contractions', dailyTip: 'Conseil du jour',
+    start: 'Démarrer', stop: 'Arrêter', kicks: 'coups', duration: 'Durée', interval: 'Intervalle', history: 'Historique', tapKick: 'Touchez chaque coup',
   },
   ar: {
     appName: 'هاجر', dashboard: 'لوحة المعلومات', pregnancy: 'الحمل', babies: 'الأطفال',
@@ -51,13 +55,15 @@ const STRINGS = {
     mood: 'المزاج', stress: 'التوتر', anxiety: 'القلق', logMood: 'تسجيل المزاج', recommendations: 'توصيات',
     loading: 'جارٍ التحميل…', error: 'حدث خطأ ما', empty: 'لا يوجد شيء بعد', language: 'اللغة',
     overdue: 'متأخر', appointment: 'موعد', medication: 'دواء', vaccination: 'تطعيم', milestone: 'مرحلة',
+    tools: 'أدوات', kickCounter: 'عداد الركلات', contractionTimer: 'مؤقّت الانقباضات', dailyTip: 'نصيحة اليوم',
+    start: 'ابدئي', stop: 'إيقاف', kicks: 'ركلة', duration: 'المدة', interval: 'الفاصل', history: 'السجل', tapKick: 'اضغطي عند كل ركلة',
   },
 };
 
 const I18nContext = createContext(null);
 
 export function I18nProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem('hajar_lang') || 'en');
+  const [lang, setLang] = useState(() => localStorage.getItem('hajar_lang') || 'ar');
 
   useEffect(() => {
     localStorage.setItem('hajar_lang', lang);
