@@ -1,0 +1,89 @@
+import { Router } from 'express';
+import { find, findOne } from '../db.js';
+import { requireAuth } from '../middleware/auth.js';
+import { VACCINE_SCHEDULE, PREGNANCY_MILESTONES } from '../content/schedules.js';
+
+const router = Router();
+router.use(requireAuth);
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Aggregates upcoming reminders across domains:
+ *  - future appointments
+ *  - active medications
+ *  - vaccinations due/overdue per baby (next 60 days)
+ *  - next pregnancy milestone
+ */
+router.get('/upcoming', async (req, res) => {
+  const lang = req.query.lang || 'en';
+  const horizonDays = Number(req.query.days) || 60;
+  const now = Date.now();
+  const items = [];
+
+  const appts = await find('appointments', (a) => a.userId === req.userId && !a.completed);
+  for (const a of appts) {
+    const t = new Date(a.datetime).getTime();
+    if (t >= now - DAY) {
+      items.push({
+        type: 'appointment',
+        title: a.title,
+        subtitle: a.doctor || a.location || '',
+        date: a.datetime,
+        overdue: false,
+      });
+    }
+  }
+
+  const meds = await find('medications', (m) => m.userId === req.userId && m.active !== false);
+  for (const m of meds) {
+    items.push({
+      type: 'medication',
+      title: m.name,
+      subtitle: [m.dosage, m.frequency].filter(Boolean).join(' • '),
+      date: m.startDate || new Date(now).toISOString(),
+      overdue: false,
+    });
+  }
+
+  const babies = await find('babies', (b) => b.userId === req.userId);
+  for (const baby of babies) {
+    if (!baby.birthDate) continue;
+    const given = await find('vaccinations', (v) => v.babyId === baby.id);
+    for (const s of VACCINE_SCHEDULE) {
+      if (given.find((g) => g.vaccine === s.vaccine)) continue;
+      const due = new Date(baby.birthDate).getTime() + s.ageMonths * 30 * DAY;
+      const diffDays = (due - now) / DAY;
+      if (diffDays <= horizonDays) {
+        items.push({
+          type: 'vaccination',
+          title: `${s.vaccine} — ${baby.name}`,
+          subtitle: s.protectsAgainst[lang] || s.protectsAgainst.en,
+          date: new Date(due).toISOString(),
+          overdue: diffDays < 0,
+        });
+      }
+    }
+  }
+
+  const preg = await findOne('pregnancies', (p) => p.userId === req.userId && p.active);
+  if (preg && preg.lmp) {
+    const lmp = new Date(preg.lmp).getTime();
+    const currentWeek = Math.floor((now - lmp) / (7 * DAY)) + 1;
+    const next = PREGNANCY_MILESTONES.find((m) => m.week >= currentWeek);
+    if (next) {
+      items.push({
+        type: 'milestone',
+        title: next.title[lang] || next.title.en,
+        subtitle: `${lang === 'fr' ? 'Semaine' : lang === 'ar' ? 'الأسبوع' : 'Week'} ${next.week}`,
+        date: new Date(lmp + next.week * 7 * DAY).toISOString(),
+        overdue: false,
+      });
+    }
+  }
+
+  items.sort((a, b) => new Date(a.date) - new Date(b.date));
+  res.json({ notifications: items, count: items.length });
+});
+
+export default router;

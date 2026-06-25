@@ -1,6 +1,8 @@
 import 'dotenv/config';
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 
 import { connect } from './db.js';
 import authRoutes from './routes/auth.js';
@@ -13,9 +15,11 @@ import recordRoutes from './routes/records.js';
 import communityRoutes from './routes/community.js';
 import aiRoutes from './routes/ai.js';
 import analyticsRoutes from './routes/analytics.js';
+import notificationRoutes from './routes/notifications.js';
 
 const app = express();
 
+app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
@@ -39,6 +43,7 @@ app.use('/api/records', recordRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
 

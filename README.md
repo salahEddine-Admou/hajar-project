@@ -3,7 +3,8 @@
 A modern mobile app for mothers to track **pregnancy, childbirth, baby development, and maternal well‑being**, with an AI assistant and a supportive community.
 
 - **Mobile app:** Flutter (Material 3, soft palette, multilingual EN / FR / AR with RTL)
-- **Backend:** Node.js + Express REST API (JWT auth, **MongoDB** via Mongoose, PDF export, optional OpenAI)
+- **Web app / dashboard:** React + Vite (analytics dashboard, charts, multilingual EN / FR / AR with RTL)
+- **Backend:** Node.js + Express REST API (JWT auth, **MongoDB** via Mongoose, Helmet, PDF export, optional OpenAI)
 
 > ⚠️ Educational software. The medical content (weekly development, vaccination schedule, EPDS screening) is for guidance only and is **not** a substitute for professional medical advice.
 
@@ -58,6 +59,9 @@ password: password123
 - `POST /ai/chat`, `GET /ai/history`
 - `GET/POST /community/posts`, `…/replies`, `…/like`
 - `GET /analytics/overview`
+- `GET /notifications/upcoming?lang=en&days=60` (aggregated appointment / vaccination / medication / milestone reminders)
+
+Robustness & security: `helmet` security headers and `express-async-errors` (async route rejections are routed to the error handler instead of hanging the request).
 
 The AI assistant uses OpenAI when `OPENAI_API_KEY` is set, otherwise a built‑in multilingual rule engine — so it always works offline.
 
@@ -108,7 +112,43 @@ lib/
 
 ---
 
+## 3. Web app / dashboard (React + Vite)
+
+### Requirements
+- Node.js 18+
+
+### Run
+```bash
+cd web
+npm install
+cp .env.example .env        # set VITE_API_BASE_URL (default http://localhost:4100/api)
+npm run dev                 # http://localhost:5173
+```
+Log in with the demo account (`demo@hajar.app` / `password123`).
+
+### What's included
+- **Analytics dashboard** — engagement totals, 7‑day activity bar chart, users‑by‑language pie chart, and aggregated upcoming reminders.
+- **Pregnancy** — week/progress, weekly development, milestones.
+- **Babies** — growth line charts (weight/height/head) and an interactive vaccination schedule.
+- **Wellness** — mood logging with sliders and a mood/stress/anxiety trend chart, plus recommendations.
+- **Community** — browse/post/reply/like across topic groups.
+- **AI Assistant** — chat UI backed by the same `/ai/chat` endpoint.
+- **i18n** — English / French / Arabic with automatic RTL.
+
+### Structure
+```
+web/src/
+  main.jsx, App.jsx        bootstrap + routing + auth guard
+  api.js                   axios client (token injection)
+  auth.jsx                 auth context
+  i18n.jsx                 EN/FR/AR strings + RTL
+  components/              Layout (sidebar), shared UI
+  pages/                   Login, Dashboard, Pregnancy, Babies, Wellness, Community, Assistant
+```
+
+---
+
 ## Tech notes
-- **Persistence:** MongoDB via Mongoose (`src/db.js`). Each logical collection uses a flexible schema; documents carry a stable string `id` (UUID) used by the API and mobile client.
+- **Persistence:** MongoDB via Mongoose (`src/db.js`). Each logical collection uses a flexible schema; documents carry a stable string `id` (UUID) used by the API and clients.
 - **Security:** passwords hashed with bcrypt; routes protected by JWT; per‑user data isolation enforced in every handler.
 - **i18n:** Arabic automatically renders right‑to‑left via Flutter's `Directionality`.
