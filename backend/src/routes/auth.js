@@ -1,0 +1,61 @@
+import { Router } from 'express';
+import bcrypt from 'bcryptjs';
+import { insert, findOne, update } from '../db.js';
+import { signToken, requireAuth } from '../middleware/auth.js';
+
+const router = Router();
+
+function publicUser(u) {
+  const { passwordHash, ...rest } = u;
+  return rest;
+}
+
+router.post('/register', async (req, res) => {
+  const { name, email, password, locale } = req.body || {};
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'name, email and password are required' });
+  }
+  const exists = await findOne('users', (u) => u.email.toLowerCase() === email.toLowerCase());
+  if (exists) return res.status(409).json({ error: 'Email already registered' });
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await insert('users', {
+    name,
+    email: email.toLowerCase(),
+    passwordHash,
+    locale: locale || 'en',
+    role: 'mother',
+  });
+  const token = signToken(user);
+  res.status(201).json({ token, user: publicUser(user) });
+});
+
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
+  const user = await findOne('users', (u) => u.email.toLowerCase() === String(email).toLowerCase());
+  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+  const token = signToken(user);
+  res.json({ token, user: publicUser(user) });
+});
+
+router.get('/me', requireAuth, async (req, res) => {
+  const user = await findOne('users', (u) => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ user: publicUser(user) });
+});
+
+router.patch('/me', requireAuth, async (req, res) => {
+  const { name, locale, avatarUrl } = req.body || {};
+  const patch = {};
+  if (name !== undefined) patch.name = name;
+  if (locale !== undefined) patch.locale = locale;
+  if (avatarUrl !== undefined) patch.avatarUrl = avatarUrl;
+  const user = await update('users', req.userId, patch);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ user: publicUser(user) });
+});
+
+export default router;

@@ -1,0 +1,23 @@
+# Dependencies
+**/node_modules/
+
+# Env & secrets
+**/.env
+.env
+
+# Backend data (legacy JSON store)
+backend/data/
+
+# Flutter / Dart
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/pubspec.lock
+
+# Editor / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

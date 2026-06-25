@@ -1,0 +1,74 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+
+import { connect } from './db.js';
+import authRoutes from './routes/auth.js';
+import pregnancyRoutes from './routes/pregnancy.js';
+import appointmentRoutes from './routes/appointments.js';
+import medicationRoutes from './routes/medications.js';
+import babyRoutes from './routes/babies.js';
+import wellnessRoutes from './routes/wellness.js';
+import recordRoutes from './routes/records.js';
+import communityRoutes from './routes/community.js';
+import aiRoutes from './routes/ai.js';
+import analyticsRoutes from './routes/analytics.js';
+
+const app = express();
+
+app.use(cors());
+app.use(express.json({ limit: '5mb' }));
+
+// Request logging (lightweight)
+app.use((req, _res, next) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  }
+  next();
+});
+
+app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'hajar-backend', time: new Date().toISOString() }));
+
+app.use('/api/auth', authRoutes);
+app.use('/api/pregnancy', pregnancyRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/medications', medicationRoutes);
+app.use('/api/babies', babyRoutes);
+app.use('/api/wellness', wellnessRoutes);
+app.use('/api/records', recordRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
+app.use((req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+const PORT = process.env.PORT || 4000;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+async function start() {
+  if (!MONGODB_URI) {
+    console.error('Missing MONGODB_URI. Set it in your .env file.');
+    process.exit(1);
+  }
+  try {
+    await connect(MONGODB_URI);
+    console.log('  Connected to MongoDB');
+  } catch (err) {
+    console.error('  MongoDB connection failed:', err.message);
+    process.exit(1);
+  }
+  app.listen(PORT, () => {
+    console.log(`\n  Hajar backend running on http://localhost:${PORT}`);
+    console.log(`  Health check:        http://localhost:${PORT}/api/health\n`);
+  });
+}
+
+start();
+
+export default app;
