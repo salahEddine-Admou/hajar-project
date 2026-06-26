@@ -38,13 +38,42 @@ function computeProgress(pregnancy) {
   };
 }
 
+// Reasonable bounds: a human pregnancy lasts ~280 days. We allow a little slack
+// on both sides to tolerate overdue dates and data-entry edge cases.
+const MAX_LMP_AGE_DAYS = 310; // LMP can't be older than this
+const MAX_DUE_AHEAD_DAYS = 300; // due date can't be further out than this
+const MAX_DUE_PAST_DAYS = 30; // due date can be at most this far in the past
+
+function parseDate(value) {
+  if (typeof value !== 'string') return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 // Create or replace the active pregnancy
 router.post('/', async (req, res) => {
   const { lmp, dueDate } = req.body || {};
   if (!lmp && !dueDate) return res.status(400).json({ error: 'Provide lmp or dueDate' });
-  // deactivate previous
-  for (const p of await find('pregnancies', { userId: req.userId, active: true })) {
-    await update('pregnancies', p.id, { active: false });
+
+  const today = Date.now();
+  if (lmp !== undefined) {
+    const d = parseDate(lmp);
+    if (!d) return res.status(400).json({ error: 'Invalid lmp date' });
+    const ageDays = (today - d.getTime()) / DAY;
+    if (ageDays < 0) return res.status(400).json({ error: 'LMP cannot be in the future' });
+    if (ageDays > MAX_LMP_AGE_DAYS) return res.status(400).json({ error: 'LMP date is too far in the past' });
+  }
+  if (dueDate !== undefined) {
+    const d = parseDate(dueDate);
+    if (!d) return res.status(400).json({ error: 'Invalid due date' });
+    const aheadDays = (d.getTime() - today) / DAY;
+    if (aheadDays > MAX_DUE_AHEAD_DAYS) return res.status(400).json({ error: 'Due date is too far in the future' });
+    if (aheadDays < -MAX_DUE_PAST_DAYS) return res.status(400).json({ error: 'Due date is too far in the past' });
+  }
+
+  // Full replace: remove any prior pregnancies so inactive rows don't accumulate.
+  for (const p of await find('pregnancies', { userId: req.userId })) {
+    await remove('pregnancies', p.id);
   }
   const pregnancy = await insert('pregnancies', { userId: req.userId, lmp, dueDate, active: true });
   res.status(201).json({ pregnancy, progress: computeProgress(pregnancy) });

@@ -1,33 +1,43 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.JWT_SECRET;
+const MIN_SECRET_LENGTH = 16;
 
-if (!SECRET) {
-  // Fail fast: a missing secret means tokens could be forged with a known
-  // default. Refuse to start instead of silently using an insecure value.
-  throw new Error(
-    'JWT_SECRET is not set. Add a long random value to your environment (e.g. `openssl rand -hex 32`).',
-  );
+function getSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < MIN_SECRET_LENGTH) return null;
+  return secret;
 }
 
-if (SECRET.length < 16) {
-  throw new Error('JWT_SECRET is too short. Use at least 32 random characters.');
+/**
+ * Bootstrap-time guard. Call this from the server/serverless entry point so a
+ * misconfiguration is reported clearly — without crashing at import time, which
+ * would also take down the unauthenticated /health endpoint.
+ * @returns {boolean} true when a usable secret is configured
+ */
+export function isAuthConfigured() {
+  return getSecret() !== null;
 }
 
 export function signToken(user) {
+  const secret = getSecret();
+  if (!secret) throw new Error('JWT_SECRET is not configured');
   return jwt.sign(
     { sub: user.id, email: user.email },
-    SECRET,
+    secret,
     { expiresIn: process.env.JWT_EXPIRES_IN || '30d' },
   );
 }
 
 export function requireAuth(req, res, next) {
+  const secret = getSecret();
+  if (!secret) {
+    return res.status(500).json({ error: 'Server authentication is not configured' });
+  }
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Authentication required' });
   try {
-    const payload = jwt.verify(token, SECRET);
+    const payload = jwt.verify(token, secret);
     req.userId = payload.sub;
     next();
   } catch {

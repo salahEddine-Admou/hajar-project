@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import app from './app.js';
 import { connect } from './db.js';
+import { isAuthConfigured } from './middleware/auth.js';
 
 const PORT = process.env.PORT || 4000;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -8,6 +9,10 @@ const MONGODB_URI = process.env.MONGODB_URI;
 async function start() {
   if (!MONGODB_URI) {
     console.error('Missing MONGODB_URI. Set it in your .env file.');
+    process.exit(1);
+  }
+  if (!isAuthConfigured()) {
+    console.error('JWT_SECRET is missing or too short (need >= 16 chars). Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
     process.exit(1);
   }
   try {

@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
+import { sanitizeMongo } from './middleware/sanitize.js';
 import authRoutes from './routes/auth.js';
 import pregnancyRoutes from './routes/pregnancy.js';
 import appointmentRoutes from './routes/appointments.js';
@@ -45,6 +46,7 @@ app.use(
 );
 
 app.use(express.json({ limit: '5mb' }));
+app.use(sanitizeMongo);
 
 // Rate limiting. Auth and AI endpoints are the most sensitive to brute-force
 // and abuse, so they get tighter limits than the general API.

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { connect, reset, insert, now } from './db.js';
+import { connect, reset, insert, now, ensureIndexes } from './db.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const iso = (d) => new Date(d).toISOString().slice(0, 10);
@@ -14,6 +14,9 @@ async function run() {
   }
   await connect(uri);
   console.log('Connected to MongoDB.');
+
+  await ensureIndexes();
+  console.log('Indexes ensured.');
 
   await reset();
   console.log('Database reset.');

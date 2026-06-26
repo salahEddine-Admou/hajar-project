@@ -3,11 +3,71 @@ import { api } from '../api';
 import { useI18n } from '../i18n';
 import { Loader, ErrorBox } from '../components/ui';
 
+function ManagePanel({ t, current, onSaved }) {
+  const [mode, setMode] = useState('lmp');
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    if (!value) return;
+    setBusy(true);
+    try {
+      await api.post('/pregnancy', mode === 'lmp' ? { lmp: value } : { dueDate: value });
+      setValue('');
+      onSaved();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = async () => {
+    if (!current) return;
+    if (!window.confirm(t('confirmReset'))) return;
+    setBusy(true);
+    try {
+      await api.delete(`/pregnancy/${current.id}`);
+      onSaved();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card" style={{ marginTop: '1rem' }}>
+      <h3 style={{ marginTop: 0 }}>{t('managePregnancy')}</h3>
+      <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '.6rem' }}>
+        <button
+          className={`chip ${mode === 'lmp' ? 'active' : ''}`}
+          onClick={() => setMode('lmp')}
+        >
+          {t('lmpDate')}
+        </button>
+        <button
+          className={`chip ${mode === 'due' ? 'active' : ''}`}
+          onClick={() => setMode('due')}
+        >
+          {t('dueDate')}
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <input type="date" value={value} onChange={(e) => setValue(e.target.value)} />
+        <button className="btn" disabled={busy || !value} onClick={save}>
+          {current ? t('editPregnancy') : t('send')}
+        </button>
+        {current && (
+          <button className="btn btn-ghost" disabled={busy} onClick={reset}>
+            {t('resetPregnancy')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Pregnancy() {
   const { t, lang } = useI18n();
   const [state, setState] = useState(null);
   const [error, setError] = useState(null);
-  const [lmp, setLmp] = useState('');
 
   const load = () => {
     setError(null);
@@ -24,27 +84,22 @@ export default function Pregnancy() {
 
   useEffect(load, [lang]);
 
-  const start = async () => {
-    if (!lmp) return;
-    await api.post('/pregnancy', { lmp });
-    load();
-  };
-
   if (error) return <ErrorBox message={error} onRetry={load} />;
   if (!state) return <Loader />;
 
   if (state.none) {
     return (
-      <div className="card" style={{ maxWidth: 460 }}>
-        <h3>{t('noPregnancy')}</h3>
-        <label>{t('dueDate')} — LMP</label>
-        <input type="date" value={lmp} onChange={(e) => setLmp(e.target.value)} />
-        <button className="btn" onClick={start}>{t('send')}</button>
+      <div style={{ maxWidth: 460 }}>
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>{t('noPregnancy')}</h3>
+          <p className="muted">{t('managePregnancy')}</p>
+        </div>
+        <ManagePanel t={t} current={null} onSaved={load} />
       </div>
     );
   }
 
-  const { progress, week, milestones } = state;
+  const { pregnancy, progress, week, milestones } = state;
   return (
     <div>
       <div className="card tinted">
@@ -62,6 +117,8 @@ export default function Pregnancy() {
           <p className="muted">{week.highlight}</p>
         </div>
       )}
+
+      <ManagePanel t={t} current={pregnancy} onSaved={load} />
 
       <div className="section-title">{t('appointments')} / {t('milestone')}</div>
       <div className="card">

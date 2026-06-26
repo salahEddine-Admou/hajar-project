@@ -40,7 +40,10 @@ function model(name) {
   if (!models[name]) {
     const schema = new mongoose.Schema(
       { id: { type: String, index: true, unique: true } },
-      { strict: false, versionKey: false, minimize: false },
+      // autoIndex is disabled so cold starts (e.g. serverless) don't trigger
+      // index builds on every boot. Indexes are created explicitly via
+      // ensureIndexes() (run from the seed/migration step).
+      { strict: false, versionKey: false, minimize: false, autoIndex: false },
     );
     // Indexes for the foreign-key-style fields the app filters on. They are
     // harmless on collections that don't use a given field (values are null).
@@ -52,6 +55,16 @@ function model(name) {
     models[name] = mongoose.model(name, schema, name);
   }
   return models[name];
+}
+
+/**
+ * Builds/updates all indexes once. Call from a migration or the seed script
+ * rather than on every request/boot.
+ */
+export async function ensureIndexes() {
+  for (const name of COLLECTIONS) {
+    await model(name).syncIndexes();
+  }
 }
 
 // Fields a client must never be able to overwrite via an update payload.
