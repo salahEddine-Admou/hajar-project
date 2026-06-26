@@ -5,6 +5,8 @@ import { signToken, requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function publicUser(u) {
   const { passwordHash, ...rest } = u;
   return rest;
@@ -15,7 +17,16 @@ router.post('/register', async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'name, email and password are required' });
   }
-  const exists = await findOne('users', (u) => u.email.toLowerCase() === email.toLowerCase());
+  if (!EMAIL_RE.test(String(email))) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+  if (String(password).length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+  if (String(name).length > 80) {
+    return res.status(400).json({ error: 'Name is too long' });
+  }
+  const exists = await findOne('users', { email: String(email).toLowerCase() });
   if (exists) return res.status(409).json({ error: 'Email already registered' });
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -33,7 +44,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
-  const user = await findOne('users', (u) => u.email.toLowerCase() === String(email).toLowerCase());
+  const user = await findOne('users', { email: String(email).toLowerCase() });
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
@@ -42,7 +53,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/me', requireAuth, async (req, res) => {
-  const user = await findOne('users', (u) => u.id === req.userId);
+  const user = await findOne('users', { id: req.userId });
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user: publicUser(user) });
 });

@@ -86,8 +86,7 @@ async function askOpenAI(history, message, lang) {
 }
 
 router.get('/history', async (req, res) => {
-  const messages = (await find('chatMessages', (m) => m.userId === req.userId))
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const messages = await find('chatMessages', { userId: req.userId }, { sort: { createdAt: 1 }, limit: 200 });
   res.json({ messages });
 });
 
@@ -97,8 +96,8 @@ router.post('/chat', async (req, res) => {
   const language = lang || 'en';
 
   await insert('chatMessages', { userId: req.userId, role: 'user', content: message });
-  const history = (await find('chatMessages', (m) => m.userId === req.userId))
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const history = (await find('chatMessages', { userId: req.userId }, { sort: { createdAt: -1 }, limit: 20 }))
+    .reverse();
 
   let reply = await askOpenAI(history, message, language);
   let source = 'ai';
@@ -111,7 +110,7 @@ router.post('/chat', async (req, res) => {
 });
 
 router.delete('/history', async (req, res) => {
-  const mine = await find('chatMessages', (m) => m.userId === req.userId);
+  const mine = await find('chatMessages', { userId: req.userId });
   for (const m of mine) await remove('chatMessages', m.id);
   res.json({ ok: true });
 });

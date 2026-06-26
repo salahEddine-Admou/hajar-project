@@ -21,7 +21,7 @@ router.get('/upcoming', async (req, res) => {
   const now = Date.now();
   const items = [];
 
-  const appts = await find('appointments', (a) => a.userId === req.userId && !a.completed);
+  const appts = await find('appointments', { userId: req.userId, completed: { $ne: true } });
   for (const a of appts) {
     const t = new Date(a.datetime).getTime();
     if (t >= now - DAY) {
@@ -35,7 +35,7 @@ router.get('/upcoming', async (req, res) => {
     }
   }
 
-  const meds = await find('medications', (m) => m.userId === req.userId && m.active !== false);
+  const meds = await find('medications', { userId: req.userId, active: { $ne: false } });
   for (const m of meds) {
     items.push({
       type: 'medication',
@@ -46,10 +46,10 @@ router.get('/upcoming', async (req, res) => {
     });
   }
 
-  const babies = await find('babies', (b) => b.userId === req.userId);
+  const babies = await find('babies', { userId: req.userId });
   for (const baby of babies) {
     if (!baby.birthDate) continue;
-    const given = await find('vaccinations', (v) => v.babyId === baby.id);
+    const given = await find('vaccinations', { babyId: baby.id });
     for (const s of VACCINE_SCHEDULE) {
       if (given.find((g) => g.vaccine === s.vaccine)) continue;
       const due = new Date(baby.birthDate).getTime() + s.ageMonths * 30 * DAY;
@@ -66,7 +66,7 @@ router.get('/upcoming', async (req, res) => {
     }
   }
 
-  const preg = await findOne('pregnancies', (p) => p.userId === req.userId && p.active);
+  const preg = await findOne('pregnancies', { userId: req.userId, active: true });
   if (preg && preg.lmp) {
     const lmp = new Date(preg.lmp).getTime();
     const currentWeek = Math.floor((now - lmp) / (7 * DAY)) + 1;
@@ -83,12 +83,12 @@ router.get('/upcoming', async (req, res) => {
   }
 
   // School: pending homework & exams with a due date
-  const assignments = await find(
+  const assignments = (await find(
     'assignments',
-    (a) => a.userId === req.userId && !a.done && a.dueDate,
-  );
+    { userId: req.userId, done: { $ne: true } },
+  )).filter((a) => a.dueDate);
   if (assignments.length) {
-    const students = await find('students', (s) => s.userId === req.userId);
+    const students = await find('students', { userId: req.userId });
     const nameOf = (id) => students.find((s) => s.id === id)?.name || '';
     for (const a of assignments) {
       const due = new Date(a.dueDate).getTime();

@@ -43,7 +43,7 @@ router.post('/', async (req, res) => {
   const { lmp, dueDate } = req.body || {};
   if (!lmp && !dueDate) return res.status(400).json({ error: 'Provide lmp or dueDate' });
   // deactivate previous
-  for (const p of await find('pregnancies', (p) => p.userId === req.userId && p.active)) {
+  for (const p of await find('pregnancies', { userId: req.userId, active: true })) {
     await update('pregnancies', p.id, { active: false });
   }
   const pregnancy = await insert('pregnancies', { userId: req.userId, lmp, dueDate, active: true });
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
 // Active pregnancy + computed progress + this week's content
 router.get('/active', async (req, res) => {
   const lang = req.query.lang || 'en';
-  const pregnancy = await findOne('pregnancies', (p) => p.userId === req.userId && p.active);
+  const pregnancy = await findOne('pregnancies', { userId: req.userId, active: true });
   if (!pregnancy) return res.json({ pregnancy: null });
   const progress = computeProgress(pregnancy);
   res.json({
@@ -64,7 +64,7 @@ router.get('/active', async (req, res) => {
 });
 
 router.patch('/:id', async (req, res) => {
-  const p = await findOne('pregnancies', (x) => x.id === req.params.id && x.userId === req.userId);
+  const p = await findOne('pregnancies', { id: req.params.id, userId: req.userId });
   if (!p) return res.status(404).json({ error: 'Not found' });
   const { lmp, dueDate, active } = req.body || {};
   const updated = await update('pregnancies', p.id, {
@@ -87,7 +87,7 @@ router.get('/weeks/:week', (req, res) => {
 // Milestones localized + relative dates if a pregnancy exists
 router.get('/milestones', async (req, res) => {
   const lang = req.query.lang || 'en';
-  const pregnancy = await findOne('pregnancies', (p) => p.userId === req.userId && p.active);
+  const pregnancy = await findOne('pregnancies', { userId: req.userId, active: true });
   const progress = pregnancy ? computeProgress(pregnancy) : null;
   const lmp = progress ? new Date(progress.lmp) : null;
   const milestones = PREGNANCY_MILESTONES.map((m) => ({
@@ -100,7 +100,7 @@ router.get('/milestones', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
-  const p = await findOne('pregnancies', (x) => x.id === req.params.id && x.userId === req.userId);
+  const p = await findOne('pregnancies', { id: req.params.id, userId: req.userId });
   if (!p) return res.status(404).json({ error: 'Not found' });
   await remove('pregnancies', p.id);
   res.json({ ok: true });

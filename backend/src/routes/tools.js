@@ -15,8 +15,7 @@ router.get('/tips/daily', (req, res) => {
 
 // ---- Kick counter (fetal movement) ----
 router.get('/kicks', async (req, res) => {
-  const sessions = (await find('kickSessions', (k) => k.userId === req.userId))
-    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+  const sessions = await find('kickSessions', { userId: req.userId }, { sort: { startedAt: -1 }, limit: 200 });
   res.json({ sessions });
 });
 
@@ -33,7 +32,7 @@ router.post('/kicks', async (req, res) => {
 });
 
 router.delete('/kicks/:id', async (req, res) => {
-  const k = await findOne('kickSessions', (x) => x.id === req.params.id && x.userId === req.userId);
+  const k = await findOne('kickSessions', { id: req.params.id, userId: req.userId });
   if (!k) return res.status(404).json({ error: 'Not found' });
   await remove('kickSessions', k.id);
   res.json({ ok: true });
@@ -41,8 +40,7 @@ router.delete('/kicks/:id', async (req, res) => {
 
 // ---- Contraction timer ----
 router.get('/contractions', async (req, res) => {
-  const items = (await find('contractions', (c) => c.userId === req.userId))
-    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+  const items = await find('contractions', { userId: req.userId }, { sort: { startedAt: -1 }, limit: 200 });
   res.json({ contractions: items });
 });
 
@@ -59,7 +57,7 @@ router.post('/contractions', async (req, res) => {
 });
 
 router.delete('/contractions/:id', async (req, res) => {
-  const c = await findOne('contractions', (x) => x.id === req.params.id && x.userId === req.userId);
+  const c = await findOne('contractions', { id: req.params.id, userId: req.userId });
   if (!c) return res.status(404).json({ error: 'Not found' });
   await remove('contractions', c.id);
   res.json({ ok: true });

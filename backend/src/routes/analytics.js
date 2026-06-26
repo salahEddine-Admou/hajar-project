@@ -12,14 +12,14 @@ router.get('/overview', async (req, res) => {
 
   const [users, pregnancies, babies, appointments, moodLogs, screenings, communityPosts, chatMessages] =
     await Promise.all([
-      find('users', () => true),
-      find('pregnancies', () => true),
-      find('babies', () => true),
-      find('appointments', () => true),
-      find('moodLogs', () => true),
-      find('screenings', () => true),
-      find('communityPosts', () => true),
-      find('chatMessages', () => true),
+      find('users', {}),
+      find('pregnancies', {}),
+      find('babies', {}),
+      find('appointments', {}),
+      find('moodLogs', {}),
+      find('screenings', {}),
+      find('communityPosts', {}),
+      find('chatMessages', {}),
     ]);
 
   const countSince = (rows, field = 'createdAt') =>

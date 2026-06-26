@@ -7,7 +7,7 @@ router.use(requireAuth);
 
 // Medication & healthcare reminders (works for mother postpartum and baby)
 router.get('/', async (req, res) => {
-  const items = await find('medications', (m) => m.userId === req.userId);
+  const items = await find('medications', { userId: req.userId });
   res.json({ medications: items });
 });
 
@@ -23,13 +23,18 @@ router.post('/', async (req, res) => {
 });
 
 router.patch('/:id', async (req, res) => {
-  const m = await findOne('medications', (x) => x.id === req.params.id && x.userId === req.userId);
+  const m = await findOne('medications', { id: req.params.id, userId: req.userId });
   if (!m) return res.status(404).json({ error: 'Not found' });
-  res.json({ medication: await update('medications', m.id, req.body || {}) });
+  const { name, dosage, frequency, times, startDate, endDate, forWhom, notes, active } = req.body || {};
+  const patch = {};
+  for (const [k, v] of Object.entries({ name, dosage, frequency, times, startDate, endDate, forWhom, notes, active })) {
+    if (v !== undefined) patch[k] = v;
+  }
+  res.json({ medication: await update('medications', m.id, patch) });
 });
 
 router.delete('/:id', async (req, res) => {
-  const m = await findOne('medications', (x) => x.id === req.params.id && x.userId === req.userId);
+  const m = await findOne('medications', { id: req.params.id, userId: req.userId });
   if (!m) return res.status(404).json({ error: 'Not found' });
   await remove('medications', m.id);
   res.json({ ok: true });

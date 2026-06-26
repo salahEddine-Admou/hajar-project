@@ -8,8 +8,7 @@ router.use(requireAuth);
 
 // ---- Daily mood tracking ----
 router.get('/mood', async (req, res) => {
-  const logs = (await find('moodLogs', (m) => m.userId === req.userId))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const logs = await find('moodLogs', { userId: req.userId }, { sort: { date: -1 }, limit: 365 });
   res.json({ moods: logs });
 });
 
@@ -50,16 +49,14 @@ router.post('/screening/epds', async (req, res) => {
 });
 
 router.get('/screening/history', async (req, res) => {
-  const items = (await find('screenings', (s) => s.userId === req.userId))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const items = await find('screenings', { userId: req.userId }, { sort: { date: -1 } });
   res.json({ screenings: items });
 });
 
 // ---- Personalized recommendations from latest mood/screening ----
 router.get('/recommendations', async (req, res) => {
   const lang = req.query.lang || 'en';
-  const screenings = (await find('screenings', (s) => s.userId === req.userId))
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const screenings = await find('screenings', { userId: req.userId }, { sort: { date: -1 }, limit: 1 });
   const latest = screenings[0];
   const risk = latest ? latest.risk : 'low';
   const tips = (WELLNESS_TIPS[risk] && (WELLNESS_TIPS[risk][lang] || WELLNESS_TIPS[risk].en)) || [];

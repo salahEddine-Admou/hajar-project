@@ -9,7 +9,7 @@ router.use(requireAuth);
 const DAY = 24 * 60 * 60 * 1000;
 
 function ownBaby(req, babyId) {
-  return findOne('babies', (b) => b.id === babyId && b.userId === req.userId);
+  return findOne('babies', { id: babyId, userId: req.userId });
 }
 
 function ageInMonths(birthDate) {
@@ -20,7 +20,7 @@ function ageInMonths(birthDate) {
 
 // ---- Baby profiles (with birth details) ----
 router.get('/', async (req, res) => {
-  const babies = (await find('babies', (b) => b.userId === req.userId)).map((b) => ({
+  const babies = (await find('babies', { userId: req.userId })).map((b) => ({
     ...b,
     ageMonths: b.birthDate ? ageInMonths(b.birthDate) : null,
   }));
@@ -41,7 +41,12 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const baby = await ownBaby(req, req.params.id);
   if (!baby) return res.status(404).json({ error: 'Not found' });
-  res.json({ baby: await update('babies', baby.id, req.body || {}) });
+  const { name, birthDate, sex, birthWeight, birthHeight, headCircumference, deliveryType, notes } = req.body || {};
+  const patch = {};
+  for (const [k, v] of Object.entries({ name, birthDate, sex, birthWeight, birthHeight, headCircumference, deliveryType, notes })) {
+    if (v !== undefined) patch[k] = v;
+  }
+  res.json({ baby: await update('babies', baby.id, patch) });
 });
 
 router.delete('/:id', async (req, res) => {
@@ -55,7 +60,7 @@ router.delete('/:id', async (req, res) => {
 router.get('/:id/growth', async (req, res) => {
   const baby = await ownBaby(req, req.params.id);
   if (!baby) return res.status(404).json({ error: 'Not found' });
-  const records = (await find('growthRecords', (g) => g.babyId === baby.id))
+  const records = (await find('growthRecords', { babyId: baby.id }))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   res.json({ records });
 });
@@ -74,7 +79,9 @@ router.post('/:id/growth', async (req, res) => {
 router.delete('/:id/growth/:recordId', async (req, res) => {
   const baby = await ownBaby(req, req.params.id);
   if (!baby) return res.status(404).json({ error: 'Not found' });
-  await remove('growthRecords', req.params.recordId);
+  const rec = await findOne('growthRecords', { id: req.params.recordId, babyId: baby.id });
+  if (!rec) return res.status(404).json({ error: 'Not found' });
+  await remove('growthRecords', rec.id);
   res.json({ ok: true });
 });
 
@@ -83,7 +90,7 @@ router.get('/:id/vaccinations', async (req, res) => {
   const baby = await ownBaby(req, req.params.id);
   if (!baby) return res.status(404).json({ error: 'Not found' });
   const lang = req.query.lang || 'en';
-  const given = await find('vaccinations', (v) => v.babyId === baby.id);
+  const given = await find('vaccinations', { babyId: baby.id });
   const schedule = VACCINE_SCHEDULE.map((s) => {
     const record = given.find((g) => g.vaccine === s.vaccine);
     const dueDate = baby.birthDate
@@ -107,7 +114,7 @@ router.post('/:id/vaccinations', async (req, res) => {
   if (!baby) return res.status(404).json({ error: 'Not found' });
   const { vaccine, givenDate } = req.body || {};
   if (!vaccine) return res.status(400).json({ error: 'vaccine is required' });
-  const existing = await findOne('vaccinations', (v) => v.babyId === baby.id && v.vaccine === vaccine);
+  const existing = await findOne('vaccinations', { babyId: baby.id, vaccine });
   if (existing) {
     return res.json({ vaccination: await update('vaccinations', existing.id, { givenDate: givenDate || new Date().toISOString().slice(0, 10) }) });
   }
@@ -118,7 +125,9 @@ router.post('/:id/vaccinations', async (req, res) => {
 router.delete('/:id/vaccinations/:recordId', async (req, res) => {
   const baby = await ownBaby(req, req.params.id);
   if (!baby) return res.status(404).json({ error: 'Not found' });
-  await remove('vaccinations', req.params.recordId);
+  const rec = await findOne('vaccinations', { id: req.params.recordId, babyId: baby.id });
+  if (!rec) return res.status(404).json({ error: 'Not found' });
+  await remove('vaccinations', rec.id);
   res.json({ ok: true });
 });
 
@@ -127,9 +136,10 @@ router.get('/:id/logs', async (req, res) => {
   const baby = await ownBaby(req, req.params.id);
   if (!baby) return res.status(404).json({ error: 'Not found' });
   const { type } = req.query;
-  let logs = await find('trackingLogs', (l) => l.babyId === baby.id);
-  if (type) logs = logs.filter((l) => l.type === type);
-  logs.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+  const filter = { babyId: baby.id };
+  if (type) filter.type = type;
+  const logs = (await find('trackingLogs', filter))
+    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
   res.json({ logs });
 });
 
@@ -148,7 +158,9 @@ router.post('/:id/logs', async (req, res) => {
 router.delete('/:id/logs/:logId', async (req, res) => {
   const baby = await ownBaby(req, req.params.id);
   if (!baby) return res.status(404).json({ error: 'Not found' });
-  await remove('trackingLogs', req.params.logId);
+  const log = await findOne('trackingLogs', { id: req.params.logId, babyId: baby.id });
+  if (!log) return res.status(404).json({ error: 'Not found' });
+  await remove('trackingLogs', log.id);
   res.json({ ok: true });
 });
 

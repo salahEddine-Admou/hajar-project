@@ -157,6 +157,17 @@ web/src/
 ---
 
 ## Tech notes
-- **Persistence:** MongoDB via Mongoose (`src/db.js`). Each logical collection uses a flexible schema; documents carry a stable string `id` (UUID) used by the API and clients.
-- **Security:** passwords hashed with bcrypt; routes protected by JWT; per‑user data isolation enforced in every handler.
+- **Persistence:** MongoDB via Mongoose (`src/db.js`). Each logical collection uses a flexible schema; documents carry a stable string `id` (UUID) used by the API and clients. Queries filter on indexed fields (`userId`, `babyId`, `studentId`, `postId`, `email`) server‑side instead of scanning collections in memory.
 - **i18n:** Arabic automatically renders right‑to‑left via Flutter's `Directionality`.
+
+## Security
+
+- **Passwords** are hashed with bcrypt; every route enforces per‑user data isolation by filtering on `userId`.
+- **JWT_SECRET is required** — the backend refuses to start without a secret of at least 16 characters. Generate one with `openssl rand -hex 32`. Set it as an environment variable in every deployment (e.g. Vercel project settings).
+- **Mass assignment is blocked** centrally: `db.update()` strips `id`, `_id`, `userId` and `createdAt` from any update payload, and write routes additionally whitelist editable fields.
+- **CORS** is locked to the origins listed in `CORS_ORIGINS` (comma‑separated) in production. Leave it empty only for local development.
+- **Rate limiting** protects the API (600 req / 15 min), with tighter limits on auth (30 / 15 min) and the AI assistant (20 / min).
+- **Input validation** on registration (email format, password ≥ 8 chars).
+- **`reset()` is disabled in production** unless `ALLOW_RESET=true`, so seeding cannot accidentally wipe live data.
+- **Database hardening (operational):** use a dedicated MongoDB user with a strong password and restrict Atlas network access to known IPs rather than `0.0.0.0/0`. Rotate any credentials that were ever shared in plaintext.
+- **Known tradeoff:** the web client stores its JWT in `localStorage`, which is convenient but readable by injected scripts (XSS). For a hardened deployment, move the token to an `httpOnly`, `Secure`, `SameSite` cookie and enable CSRF protection — this requires serving the web app and API from the same site (or configured CORS credentials).

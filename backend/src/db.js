@@ -42,10 +42,20 @@ function model(name) {
       { id: { type: String, index: true, unique: true } },
       { strict: false, versionKey: false, minimize: false },
     );
+    // Indexes for the foreign-key-style fields the app filters on. They are
+    // harmless on collections that don't use a given field (values are null).
+    schema.index({ userId: 1 });
+    schema.index({ babyId: 1 });
+    schema.index({ studentId: 1 });
+    schema.index({ postId: 1 });
+    schema.index({ email: 1 }, { sparse: true });
     models[name] = mongoose.model(name, schema, name);
   }
   return models[name];
 }
+
+// Fields a client must never be able to overwrite via an update payload.
+const PROTECTED_FIELDS = ['id', '_id', 'userId', 'createdAt'];
 
 let connectPromise = null;
 
@@ -92,19 +102,30 @@ export async function insert(name, doc) {
   return record;
 }
 
-export async function find(name, predicate = () => true) {
-  const docs = await model(name).find({}).lean();
-  return docs.map(clean).filter(predicate);
+/**
+ * Query a collection with a MongoDB filter object (indexed server-side).
+ * @param {string} name collection
+ * @param {object} filter Mongo query (e.g. { userId, active: true })
+ * @param {object} [options] { sort, limit }
+ */
+export async function find(name, filter = {}, options = {}) {
+  let query = model(name).find(filter);
+  if (options.sort) query = query.sort(options.sort);
+  if (options.limit) query = query.limit(options.limit);
+  const docs = await query.lean();
+  return docs.map(clean);
 }
 
-export async function findOne(name, predicate) {
-  const docs = await find(name);
-  return docs.find(predicate) || null;
+export async function findOne(name, filter = {}) {
+  const doc = await model(name).findOne(filter).lean();
+  return clean(doc);
 }
 
 export async function update(name, recordId, patch) {
-  const updated = { ...patch, updatedAt: now() };
-  await model(name).updateOne({ id: recordId }, { $set: updated });
+  const safe = { ...patch };
+  for (const key of PROTECTED_FIELDS) delete safe[key];
+  safe.updatedAt = now();
+  await model(name).updateOne({ id: recordId }, { $set: safe });
   const doc = await model(name).findOne({ id: recordId }).lean();
   return clean(doc);
 }
@@ -115,6 +136,9 @@ export async function remove(name, recordId) {
 }
 
 export async function reset() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_RESET !== 'true') {
+    throw new Error('reset() is disabled in production. Set ALLOW_RESET=true to override.');
+  }
   for (const name of COLLECTIONS) {
     await model(name).deleteMany({});
   }

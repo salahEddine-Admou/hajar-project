@@ -1,6 +1,18 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.JWT_SECRET || 'dev-insecure-secret';
+const SECRET = process.env.JWT_SECRET;
+
+if (!SECRET) {
+  // Fail fast: a missing secret means tokens could be forged with a known
+  // default. Refuse to start instead of silently using an insecure value.
+  throw new Error(
+    'JWT_SECRET is not set. Add a long random value to your environment (e.g. `openssl rand -hex 32`).',
+  );
+}
+
+if (SECRET.length < 16) {
+  throw new Error('JWT_SECRET is too short. Use at least 32 random characters.');
+}
 
 export function signToken(user) {
   return jwt.sign(

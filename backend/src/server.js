@@ -19,7 +19,7 @@ async function start() {
   }
   app.listen(PORT, () => {
     console.log(`\n  Hajar backend running on http://localhost:${PORT}`);
-    console.log(`  Health check:        http://localhost:${PORT}/api/health\n`);
+    console.log(`  Health check: http://localhost:${PORT}/api/health\n`);
   });
 }
 

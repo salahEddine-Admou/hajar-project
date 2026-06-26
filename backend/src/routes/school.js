@@ -6,7 +6,8 @@ const router = Router();
 router.use(requireAuth);
 
 function ownStudent(req, studentId) {
-  return findOne('students', (s) => s.id === studentId && s.userId === req.userId);
+  if (!studentId) return null;
+  return findOne('students', { id: studentId, userId: req.userId });
 }
 
 function pct(score, max) {
@@ -17,7 +18,7 @@ function pct(score, max) {
 
 // ---- Students (school profiles) ----
 router.get('/students', async (req, res) => {
-  const students = (await find('students', (s) => s.userId === req.userId))
+  const students = (await find('students', { userId: req.userId }))
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   res.json({ students });
 });
@@ -41,7 +42,12 @@ router.post('/students', async (req, res) => {
 router.patch('/students/:id', async (req, res) => {
   const student = await ownStudent(req, req.params.id);
   if (!student) return res.status(404).json({ error: 'Not found' });
-  res.json({ student: await update('students', student.id, req.body || {}) });
+  const { name, babyId, schoolName, grade, teacher, year, color } = req.body || {};
+  const patch = {};
+  for (const [k, v] of Object.entries({ name, babyId, schoolName, grade, teacher, year, color })) {
+    if (v !== undefined) patch[k] = v;
+  }
+  res.json({ student: await update('students', student.id, patch) });
 });
 
 router.delete('/students/:id', async (req, res) => {
@@ -49,7 +55,7 @@ router.delete('/students/:id', async (req, res) => {
   if (!student) return res.status(404).json({ error: 'Not found' });
   // Cascade delete related records.
   for (const coll of ['grades', 'assignments', 'attendance', 'timetable']) {
-    const items = await find(coll, (x) => x.studentId === student.id);
+    const items = await find(coll, { studentId: student.id });
     for (const it of items) await remove(coll, it.id);
   }
   await remove('students', student.id);
@@ -60,7 +66,7 @@ router.delete('/students/:id', async (req, res) => {
 router.get('/grades', async (req, res) => {
   const student = await ownStudent(req, req.query.studentId);
   if (!student) return res.status(404).json({ error: 'Student not found' });
-  const grades = (await find('grades', (g) => g.studentId === student.id))
+  const grades = (await find('grades', { studentId: student.id }))
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .map((g) => ({ ...g, percent: pct(g.score, g.max) }));
   res.json({ grades });
@@ -86,7 +92,7 @@ router.post('/grades', async (req, res) => {
 });
 
 router.delete('/grades/:id', async (req, res) => {
-  const g = await findOne('grades', (x) => x.id === req.params.id && x.userId === req.userId);
+  const g = await findOne('grades', { id: req.params.id, userId: req.userId });
   if (!g) return res.status(404).json({ error: 'Not found' });
   await remove('grades', g.id);
   res.json({ ok: true });
@@ -96,7 +102,7 @@ router.delete('/grades/:id', async (req, res) => {
 router.get('/assignments', async (req, res) => {
   const student = await ownStudent(req, req.query.studentId);
   if (!student) return res.status(404).json({ error: 'Student not found' });
-  const assignments = (await find('assignments', (a) => a.studentId === student.id))
+  const assignments = (await find('assignments', { studentId: student.id }))
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
   res.json({ assignments });
 });
@@ -119,13 +125,19 @@ router.post('/assignments', async (req, res) => {
 });
 
 router.patch('/assignments/:id', async (req, res) => {
-  const a = await findOne('assignments', (x) => x.id === req.params.id && x.userId === req.userId);
+  const a = await findOne('assignments', { id: req.params.id, userId: req.userId });
   if (!a) return res.status(404).json({ error: 'Not found' });
-  res.json({ assignment: await update('assignments', a.id, req.body || {}) });
+  const { title, subject, dueDate, type, done } = req.body || {};
+  const patch = {};
+  for (const [k, v] of Object.entries({ title, subject, dueDate, done })) {
+    if (v !== undefined) patch[k] = v;
+  }
+  if (type !== undefined) patch.type = type === 'exam' ? 'exam' : 'homework';
+  res.json({ assignment: await update('assignments', a.id, patch) });
 });
 
 router.delete('/assignments/:id', async (req, res) => {
-  const a = await findOne('assignments', (x) => x.id === req.params.id && x.userId === req.userId);
+  const a = await findOne('assignments', { id: req.params.id, userId: req.userId });
   if (!a) return res.status(404).json({ error: 'Not found' });
   await remove('assignments', a.id);
   res.json({ ok: true });
@@ -135,7 +147,7 @@ router.delete('/assignments/:id', async (req, res) => {
 router.get('/attendance', async (req, res) => {
   const student = await ownStudent(req, req.query.studentId);
   if (!student) return res.status(404).json({ error: 'Student not found' });
-  const records = (await find('attendance', (r) => r.studentId === student.id))
+  const records = (await find('attendance', { studentId: student.id }))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   res.json({ attendance: records });
 });
@@ -156,7 +168,7 @@ router.post('/attendance', async (req, res) => {
 });
 
 router.delete('/attendance/:id', async (req, res) => {
-  const r = await findOne('attendance', (x) => x.id === req.params.id && x.userId === req.userId);
+  const r = await findOne('attendance', { id: req.params.id, userId: req.userId });
   if (!r) return res.status(404).json({ error: 'Not found' });
   await remove('attendance', r.id);
   res.json({ ok: true });
@@ -166,7 +178,7 @@ router.delete('/attendance/:id', async (req, res) => {
 router.get('/timetable', async (req, res) => {
   const student = await ownStudent(req, req.query.studentId);
   if (!student) return res.status(404).json({ error: 'Student not found' });
-  const entries = (await find('timetable', (t) => t.studentId === student.id))
+  const entries = (await find('timetable', { studentId: student.id }))
     .sort((a, b) => (a.day - b.day) || (a.startTime || '').localeCompare(b.startTime || ''));
   res.json({ timetable: entries });
 });
@@ -189,7 +201,7 @@ router.post('/timetable', async (req, res) => {
 });
 
 router.delete('/timetable/:id', async (req, res) => {
-  const t = await findOne('timetable', (x) => x.id === req.params.id && x.userId === req.userId);
+  const t = await findOne('timetable', { id: req.params.id, userId: req.userId });
   if (!t) return res.status(404).json({ error: 'Not found' });
   await remove('timetable', t.id);
   res.json({ ok: true });
@@ -201,9 +213,9 @@ router.get('/students/:id/summary', async (req, res) => {
   if (!student) return res.status(404).json({ error: 'Not found' });
 
   const [grades, assignments, attendance] = await Promise.all([
-    find('grades', (g) => g.studentId === student.id),
-    find('assignments', (a) => a.studentId === student.id),
-    find('attendance', (r) => r.studentId === student.id),
+    find('grades', { studentId: student.id }),
+    find('assignments', { studentId: student.id }),
+    find('attendance', { studentId: student.id }),
   ]);
 
   // Per-subject averages

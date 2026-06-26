@@ -8,7 +8,7 @@ router.use(requireAuth);
 
 // ---- Secure health record metadata storage ----
 router.get('/', async (req, res) => {
-  const items = (await find('healthRecords', (r) => r.userId === req.userId))
+  const items = (await find('healthRecords', { userId: req.userId }))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   res.json({ records: items });
 });
@@ -25,13 +25,18 @@ router.post('/', async (req, res) => {
 });
 
 router.patch('/:id', async (req, res) => {
-  const r = await findOne('healthRecords', (x) => x.id === req.params.id && x.userId === req.userId);
+  const r = await findOne('healthRecords', { id: req.params.id, userId: req.userId });
   if (!r) return res.status(404).json({ error: 'Not found' });
-  res.json({ record: await update('healthRecords', r.id, req.body || {}) });
+  const { title, type, date, doctor, babyId, notes, attachmentUrl } = req.body || {};
+  const patch = {};
+  for (const [k, v] of Object.entries({ title, type, date, doctor, babyId, notes, attachmentUrl })) {
+    if (v !== undefined) patch[k] = v;
+  }
+  res.json({ record: await update('healthRecords', r.id, patch) });
 });
 
 router.delete('/:id', async (req, res) => {
-  const r = await findOne('healthRecords', (x) => x.id === req.params.id && x.userId === req.userId);
+  const r = await findOne('healthRecords', { id: req.params.id, userId: req.userId });
   if (!r) return res.status(404).json({ error: 'Not found' });
   await remove('healthRecords', r.id);
   res.json({ ok: true });
@@ -39,11 +44,11 @@ router.delete('/:id', async (req, res) => {
 
 // ---- Export a full health summary as PDF ----
 router.get('/export/pdf', async (req, res) => {
-  const user = await findOne('users', (u) => u.id === req.userId);
-  const records = (await find('healthRecords', (r) => r.userId === req.userId))
+  const user = await findOne('users', { id: req.userId });
+  const records = (await find('healthRecords', { userId: req.userId }))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
-  const babies = await find('babies', (b) => b.userId === req.userId);
-  const appointments = await find('appointments', (a) => a.userId === req.userId);
+  const babies = await find('babies', { userId: req.userId });
+  const appointments = await find('appointments', { userId: req.userId });
 
   const doc = new PDFDocument({ margin: 50 });
   res.setHeader('Content-Type', 'application/pdf');
